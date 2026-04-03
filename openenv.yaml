@@ -1,0 +1,21 @@
+spec_version: 1.0.0
+env_name: "Loan Approval Environment"
+description: "An intelligent loan approval system that learns to maximize profit while minimizing risk by deciding whether to approve or reject applicants."
+tasks:
+  - name: "Easy Task"
+    grader: "graders:grader_easy"
+    reward_range: [0.0, 1.0]
+  - name: "Medium Task"
+    grader: "graders:grader_medium"
+    reward_range: [0.0, 1.0]
+  - name: "Hard Task"
+    grader: "graders:grader_hard"
+    reward_range: [0.0, 1.0]
+
+state_model: "ApplicantState"
+action_model: "ApplicantAction"
+metrics:
+  - Approval Rate
+  - Profit/Loss
+  - Default Rate
+  - Success Rate
