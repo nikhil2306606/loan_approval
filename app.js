@@ -3,7 +3,7 @@ let aiModel = null;
 let accChartInstance = null;
 let rewChartInstance = null;
 
-// Initialize charts globally
+
 async function initDashboard() {
     try {
         const response = await fetch('results.json');
@@ -12,7 +12,6 @@ async function initDashboard() {
         setupButtons();
         updateDashboard('easy');
         
-        // Fetch AI Model for live demo
         const modelRes = await fetch('ai_model.json');
         if (modelRes.ok) {
             aiModel = await modelRes.json();
@@ -99,7 +98,7 @@ function updateChart(canvasId, chartInstance, labels, dataPoints, title, colors,
     updateRef(newChart);
 }
 
-// LIVE AI EVALUATION
+
 document.getElementById('btn-evaluate').addEventListener('click', () => {
     if (!aiModel) {
         alert("The AI model hasn't been generated yet! Run 'python main.py' locally first so it exports ai_model.json.");
@@ -111,7 +110,6 @@ document.getElementById('btn-evaluate').addEventListener('click', () => {
     let debt = parseInt(document.getElementById('demo-debt').value);
     let loan = parseInt(document.getElementById('demo-loan').value);
     
-    // Discretize state exactly like the python QLearningAgent
     let incBucket = inc < 50000 ? 0 : (inc < 80000 ? 1 : 2);
     let credBucket = cred < 600 ? 0 : (cred < 700 ? 1 : 2);
     let dti = debt / Math.max(1, inc);
@@ -130,8 +128,7 @@ document.getElementById('btn-evaluate').addEventListener('click', () => {
     let qValues = aiModel[stateKey];
     
     if (!qValues) {
-        // Tie / Unexplored
-        resultDiv.classList.add('rejected'); // Default safe visually
+        resultDiv.classList.add('rejected'); 
         statusH3.innerText = "⚠️ UNKNOWN PROFILE";
         statusH3.style.color = "#f59e0b";
         reasonP.innerText = "The AI hasn't seen enough data structurally identical to this profile during its 10,000 game run. Try a more common scenario!";

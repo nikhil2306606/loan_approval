@@ -1,8 +1,8 @@
 {
     "easy": [
         {
-            "avg_reward": 3.31,
-            "accuracy": 0.55,
+            "avg_reward": 2.81,
+            "accuracy": 0.52,
             "agent": "Random Player"
         },
         {
@@ -18,34 +18,34 @@
     ],
     "medium": [
         {
-            "avg_reward": -1.11,
-            "accuracy": 0.47,
+            "avg_reward": -0.9,
+            "accuracy": 0.49,
             "agent": "Random Player"
         },
         {
-            "avg_reward": 2.68,
-            "accuracy": 0.76,
+            "avg_reward": 3.71,
+            "accuracy": 0.81,
             "agent": "Human Rules"
         },
         {
-            "avg_reward": 3.73,
-            "accuracy": 0.75,
+            "avg_reward": 2.58,
+            "accuracy": 0.68,
             "agent": "AI (Q-Learning)"
         }
     ],
     "hard": [
         {
-            "avg_reward": -5.27,
-            "accuracy": 0.49,
+            "avg_reward": -4.51,
+            "accuracy": 0.51,
             "agent": "Random Player"
         },
         {
-            "avg_reward": 0.3,
+            "avg_reward": 0.21,
             "accuracy": 0.76,
             "agent": "Human Rules"
         },
         {
-            "avg_reward": 1.0,
+            "avg_reward": 0.94,
             "accuracy": 0.75,
             "agent": "AI (Q-Learning)"
         }
