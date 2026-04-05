@@ -33,7 +33,7 @@ def run_baseline():
     with open("baseline_scores.json", "w") as f:
         json.dump(out, f, indent=4)
         
-    print("\n✅ Baseline inference complete. Reproducible scores saved to baseline_scores.json.")
+    print("\n Baseline inference complete. Reproducible scores saved to baseline_scores.json.")
     print(f"Rule Based Score (Hard): {b_hard}")
     print(f"Random Score (Hard):     {r_hard}")
 

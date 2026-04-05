@@ -1,30 +1,88 @@
-# 🏦 Loan Approval OpenEnv RL
+---
+title: Loan Approval RL
+emoji: 🏦
+colorFrom: blue
+colorTo: green
+sdk: docker
+python_version: "3.10"
+pinned: false
+tags:
+  - openenv
 
-An intelligent loan approval Reinforcement Learning system that learns to maximize profit while minimizing risk. Built strictly following the **OpenEnv Specification**, this project features a Contextual Bandit Q-Learning AI, automated benchmarking graders, and a stunning, interactive Web Dashboard.
+---
+# Loan Approval OpenEnv RL
+
+A reinforcement learning environment where an agent acts as a bank loan officer, learning to maximize profit by correctly approving good applicants and rejecting risky ones.
 
 ---
 
-## 📂 File Explanations
-Here is a breakdown of every piece of the architecture:
+## Environment Description & Motivation
 
-### The Core Environment
-* **`env.py`**: The core environment built on the OpenEnv spec. Uses strictly typed `pydantic` models (`ApplicantState`, `ApplicantAction`) and provides the `step()`, `reset()`, and `state()` API.
-* **`agent.py`**: Contains three independent agent logic classes: `RandomAgent` (guesses randomly), `RuleBasedAgent` (human-crafted baseline rules), and our smart `QLearningAgent` (the AI).
-
-### Execution Scripts
-* **`baseline.py`**: The baseline inference script. It tests the Human vs Random agents offline to generate reproducible metrics.
-* **`main.py`**: The primary Orchestrator loop. It aggressively trains the AI across 10,000 games on Easy/Medium/Hard, then tests it. It exports performance data to `results.json` and the AI's literal brain (Q-Table) to `ai_model.json`.
-* **`graders.py`**: Contains three evaluation graders (`grader_easy`, `grader_medium`, `grader_hard`) that normalize agent performances to a strict `[0.0 to 1.0]` accuracy score.
-
-### Deployment & UI
-* **`openenv.yaml`**: The required OpenEnv metadata describing our tasks, metrics, and models.
-* **`Dockerfile`**: Packages the app completely so it flawlessly builds and hosts the dashboard on Hugging Face Spaces.
-* **`index.html`, `style.css`, `app.js`**: A custom-built, glassmorphism Web Application that visualizes the AI's training metrics in animated graphs, and runs a client-side JavaScript engine to let you test the AI live.
+Banks lose money in two ways: approving loans that default (costly bad debt), and rejecting applicants who would have repaid (missed revenue). This environment models that tradeoff. The agent receives a stream of loan applicants described by financial features and must decide whether to approve or reject each one. Reward is asymmetric — false approvals are penalized more heavily than missed opportunities, pushing the agent to learn risk-aware lending behavior.
 
 ---
 
-## ⚙️ Installation & Requirements
-Before running anything, make sure you download the required Python libraries (mainly `pydantic` for the typed models):
+## Observation Space
+
+Each episode step presents an `ApplicantState` with the following fields:
+
+| Field | Type | Description |
+|---|---|---|
+| `income` | float | Annual income in USD |
+| `credit_score` | float | Credit score (300–850) |
+| `debt` | float | Existing debt in USD |
+| `loan_amount` | float | Requested loan amount in USD |
+| `employment_status` | int | 1 = employed, 0 = unemployed |
+
+---
+
+## Action Space
+
+The agent returns an `ApplicantAction`:
+
+| Field | Type | Description |
+|---|---|---|
+| `approve` | bool | `True` to approve the loan, `False` to reject |
+
+---
+
+## Reward Function
+
+| Situation | Reward |
+|---|---|
+| Approve a good applicant | +10.0 |
+| Approve a risky applicant | -20.0 |
+| Reject a good applicant | -5.0 |
+| Reject a risky applicant | +2.0 |
+
+An applicant is "good" if they score 3+ on: credit score > 650, debt < 50% of income, loan < 40% of income, employed.
+
+---
+
+## Tasks & Difficulty Levels
+
+| Task | Grader | Description | Expected Difficulty |
+|---|---|---|---|
+| Easy | `grader_easy` | High-income, high-credit, low-debt applicants only. Most should be approved. | Low |
+| Medium | `grader_medium` | Mixed profiles with moderate income and credit variability. | Medium |
+| Hard | `grader_hard` | Wide income range (20k–100k), lower credit (500–750), high debt variability. Requires nuanced decisions. | High |
+
+All graders return a normalized accuracy score in **[0.0, 1.0]**.
+
+---
+
+## Baseline Scores
+
+Reproducible scores from `baseline.py` (1000 episodes per task):
+
+| Agent | Easy | Medium | Hard |
+|---|---|---|---|
+| Rule-Based (Human) | 1.000 | 0.791 | 0.750 |
+| Random | 0.531 | 0.490 | 0.508 |
+
+---
+
+## Setup & Installation
 
 ```bash
 pip install -r requirements.txt
@@ -32,28 +90,49 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 How to Execute the Project
-Run these exact commands sequentially in your terminal to see the system work from start to finish:
+## How to Run
 
-**Step 1:** Generate the baseline inference scores.
+**Step 1:** Generate baseline inference scores.
 ```bash
 python baseline.py
 ```
 
-**Step 2:** Train the advanced AI models and generate the exported `.json` data dictionaries.
+**Step 2:** Train the Q-Learning agent and export results.
 ```bash
 python main.py
 ```
 
-**Step 3:** Spin up a local server to view the Web Application Dashboard.
+**Step 3:** Start the API server + dashboard.
 ```bash
-python -m http.server
+python server.py
 ```
 
-**Step 4:** Open your web browser and go to your locally hosted dashboard!
-```text
+**Step 4:** Open the dashboard.
+```
 http://localhost:8000
 ```
 
-**Step 5 (Interactive Evaluation):** 
-Once you open the webpage, view the comparative graphs. Then, **scroll to the bottom of the page**. You will see an interactive form where you can type in theoretical income/debt statistics. Click the "Evaluate" button, and our trained RL model will run an inference right in your browser to tell you exactly why it would Approve or Reject you!
+**Step 5 (LLM Agent Inference):** Set environment variables, then run:
+```bash
+export API_BASE_URL="https://your-llm-endpoint"
+export MODEL_NAME="your-model-name"
+export HF_TOKEN="your-token"
+python inference.py
+```
+
+---
+
+## File Overview
+
+| File | Purpose |
+|---|---|
+| `env.py` | Core OpenEnv environment with `step()`, `reset()`, `state()` |
+| `agent.py` | RandomAgent, RuleBasedAgent, QLearningAgent |
+| `graders.py` | `grader_easy`, `grader_medium`, `grader_hard` |
+| `baseline.py` | Baseline inference script (reproducible scores) |
+| `inference.py` | LLM agent inference script (uses OpenAI client) |
+| `main.py` | Trains Q-Learning agent, exports results JSON |
+| `server.py` | Flask API server exposing `/reset`, `/step`, `/state` |
+| `openenv.yaml` | OpenEnv spec metadata |
+| `Dockerfile` | Container build — trains model at build time, serves API |
+| `index.html` / `style.css` / `app.js` | Web dashboard |

@@ -1,2 +1,5 @@
 __pycache__/
 .pytest_cache/
+implementation_plan.md
+inference_results.json
+*.pyc

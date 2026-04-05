@@ -7,7 +7,7 @@ class ApplicantState(BaseModel):
     credit_score: float
     debt: float
     loan_amount: float
-    employment_status: int  # 1 for employed, 0 for unemployed
+    employment_status: int  
 
 class ApplicantAction(BaseModel):
     approve: bool

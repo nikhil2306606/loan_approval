@@ -1,21 +1,55 @@
+tags:
+  - openenv
 spec_version: 1.0.0
 env_name: "Loan Approval Environment"
-description: "An intelligent loan approval system that learns to maximize profit while minimizing risk by deciding whether to approve or reject applicants."
+description: "A reinforcement learning environment where an agent acts as a bank loan officer, deciding whether to approve or reject applicants to maximize profit while minimizing default risk."
+
+# HTTP API endpoints 
+endpoints:
+  reset: "POST /reset"
+  step:  "POST /step"
+  state: "GET  /state"
+
+# Typed models 
+state_model: "env:ApplicantState"
+action_model: "env:ApplicantAction"
+
+# inference script
+inference_script: "inference.py"
+
+# Tasks and graders
 tasks:
   - name: "Easy Task"
     grader: "graders:grader_easy"
     reward_range: [0.0, 1.0]
+    difficulty: easy
+    description: "High-income, high-credit applicants. Most should be approved."
+
   - name: "Medium Task"
     grader: "graders:grader_medium"
     reward_range: [0.0, 1.0]
+    difficulty: medium
+    description: "Mixed profiles with moderate income and credit variability."
+
   - name: "Hard Task"
     grader: "graders:grader_hard"
     reward_range: [0.0, 1.0]
+    difficulty: hard
+    description: "Wide income range, lower credit scores, high debt variability."
 
-state_model: "ApplicantState"
-action_model: "ApplicantAction"
+# Baseline scores 
+baseline_scores:
+  rule_based:
+    easy: 1.000
+    medium: 0.791
+    hard: 0.750
+  random:
+    easy: 0.531
+    medium: 0.490
+    hard: 0.508
+
 metrics:
+  - Accuracy
+  - Avg Reward
   - Approval Rate
-  - Profit/Loss
   - Default Rate
-  - Success Rate
