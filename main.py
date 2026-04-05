@@ -59,14 +59,17 @@ if __name__ == "__main__":
     for diff in difficulties:
         print(f"Testing on {diff}...")
 
+        # 1. Random Agent
         rand_res = run_experiment("Random", RandomAgent(), diff)
         rand_res["agent"] = "Random Player"
         del rand_res["q_table"]
 
+        # 2. Rule Based
         rule_res = run_experiment("RuleBased", RuleBasedAgent(), diff)
         rule_res["agent"] = "Human Rules"
         del rule_res["q_table"]
 
+        # 3. Q-Learning
         q_res = run_experiment("Q-Learning", QLearningAgent(), diff, is_q_learning=True)
         q_res["agent"] = "AI (Q-Learning)"
 

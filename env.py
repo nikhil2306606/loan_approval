@@ -7,7 +7,7 @@ class ApplicantState(BaseModel):
     credit_score: float
     debt: float
     loan_amount: float
-    employment_status: int  # 1 for employed, 0 for unemployed
+    employment_status: int  
 
 class ApplicantAction(BaseModel):
     approve: bool
@@ -62,11 +62,13 @@ class LoanEnv:
     def step(self, action: ApplicantAction) -> Tuple[ApplicantState, float, bool, Dict]:
         good = self.is_good_applicant(self._state)
         
+        # Reward Logic from hackathon notes
         if action.approve:
             reward = 10.0 if good else -20.0
         else:
             reward = -5.0 if good else 2.0
             
+        # Agent completes interaction in one step
         next_state = self.generate_applicant() 
         self._state = next_state
         return next_state, reward, True, {"is_good": good, "profit": reward}

@@ -1,3 +1,16 @@
+"""
+server.py — OpenEnv HTTP API + Dashboard
+
+Exposes the step()/reset()/state() endpoints required by the OpenEnv spec
+and serves the static dashboard UI at /.
+
+Endpoints:
+  POST /reset?difficulty=easy|medium|hard  -> ApplicantState JSON
+  POST /step                               -> {state, reward, done, info}
+  GET  /state                              -> ApplicantState JSON
+  GET  /health                             -> {"status": "ok"}
+  GET  /                                   -> Dashboard HTML
+"""
 import os
 import json
 from flask import Flask, jsonify, request, send_from_directory
@@ -18,7 +31,8 @@ def reset():
     return jsonify(state.model_dump())
 
 
-@app.route("/step", methods=["POST"])
+
+@app.route("/step", methods=["POST", "GET"])
 def step():
     data = request.get_json(force=True, silent=True) or {}
     if "approve" not in data:
@@ -45,9 +59,12 @@ def health():
 
 @app.route("/")
 def index():
-    return send_from_directory(".", "index.html")
-
+    return jsonify({
+        "name": "Loan Approval OpenEnv",
+        "status": "ok",
+        "endpoints": ["/reset", "/step", "/state", "/health"]
+    })
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port)
