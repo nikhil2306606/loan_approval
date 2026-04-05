@@ -1,8 +1,10 @@
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, jsonify, request
 from env import LoanEnv, ApplicantAction
-import os
-
-app = Flask(_name_)
+app = Flask(__name__)
 _env = LoanEnv(difficulty="hard")
 
 @app.route("/reset", methods=["POST", "GET"])
@@ -35,6 +37,9 @@ def health():
 def index():
     return jsonify({"name": "Loan Approval OpenEnv", "status": "ok", "endpoints": ["/reset", "/step", "/state", "/health"]})
 
-if _name_ == "_main_":
+def main():
     port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port)
+
+if __name__ == "__main__":
+    main()
