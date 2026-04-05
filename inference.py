@@ -3,24 +3,33 @@ import json
 from typing import List, Optional
 from openai import OpenAI
 from env import LoanEnv, ApplicantAction
-from graders import grader_easy, grader_medium, grader_hard
 
+# ── Environment variables ────────────────────────────────────────────────────
+# API_BASE_URL must point to the LLM router, NOT to this HF Space.
+# Default is the HF inference router. Override with your own endpoint if needed.
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
-HF_TOKEN = os.getenv("HF_TOKEN")
+MODEL_NAME   = os.getenv("MODEL_NAME")   or "mistralai/Mistral-7B-Instruct-v0.3"
+HF_TOKEN     = os.getenv("HF_TOKEN")     # No default — required
 
-TASK_NAME = os.getenv("LOAN_ENV_TASK", "hard")
-BENCHMARK = "loan_approval_rl"
-MAX_EPISODES = 1000
+TASK_NAME  = os.getenv("LOAN_ENV_TASK", "all")
+BENCHMARK  = "loan_approval_rl"
+
+# Keep episodes low enough to finish in < 20 min on vcpu=2 / 8GB
+# 50 episodes x 3 difficulties = 150 LLM calls total
+MAX_EPISODES            = 50
 SUCCESS_SCORE_THRESHOLD = 0.75
 
 if not HF_TOKEN:
     raise EnvironmentError(
-        "Missing required environment variable: HF_TOKEN. "
-        "Please set HF_TOKEN, API_BASE_URL, and MODEL_NAME."
+        "HF_TOKEN environment variable is not set. "
+        "Please export HF_TOKEN=<your-huggingface-token> before running."
     )
 
-client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
+# ── OpenAI-compatible client pointing at HF router ───────────────────────────
+client = OpenAI(
+    base_url=API_BASE_URL,  # e.g. https://router.huggingface.co/v1
+    api_key=HF_TOKEN,
+)
 
 SYSTEM_PROMPT = """You are a bank loan officer AI. You will be given a loan applicant's profile.
 Your job is to decide whether to APPROVE or REJECT the loan.
@@ -39,13 +48,14 @@ Base your decision on:
 Respond ONLY with the JSON. No explanation."""
 
 
+# ── Structured stdout loggers (required format) ───────────────────────────────
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
 
 def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
     error_val = error if error else "null"
-    done_val = str(done).lower()
+    done_val  = str(done).lower()
     print(
         f"[STEP] step={step} action={action} reward={reward:.2f} done={done_val} error={error_val}",
         flush=True,
@@ -60,10 +70,11 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     )
 
 
+# ── LLM Agent ─────────────────────────────────────────────────────────────────
 class LLMAgent:
-    """Agent that uses an LLM via the OpenAI-compatible client."""
+    """Calls the LLM via OpenAI-compatible client to make approve/reject decisions."""
 
-    def choose_action(self, applicant):
+    def choose_action(self, applicant: dict) -> int:
         if not isinstance(applicant, dict):
             applicant = applicant.model_dump()
 
@@ -82,68 +93,86 @@ class LLMAgent:
                 model=MODEL_NAME,
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": user_msg},
+                    {"role": "user",   "content": user_msg},
                 ],
                 max_tokens=32,
                 temperature=0.0,
             )
             text = response.choices[0].message.content.strip()
+            # Strip markdown fences if model wraps JSON in ```
+            text = text.strip("` \n").removeprefix("json").strip()
             decision = json.loads(text)
             return 1 if decision.get("approve", False) else 0
+
         except Exception as exc:
-            print(f"[DEBUG] Model request failed: {exc}", flush=True)
+            err_str = str(exc)
+            print(f"[DEBUG] Model request failed: {err_str}", flush=True)
+            # If it's an auth error, stop immediately with a clear message
+            if any(code in err_str for code in ["401", "403", "Invalid username", "Unauthorized", "sufficient permissions"]):
+                raise RuntimeError(
+                    "\n\n[AUTH ERROR] HF_TOKEN is invalid or expired.\n"
+                    "Fix: huggingface.co/settings/tokens → New token → Fine-grained\n"
+                    "→ Enable 'Make calls to serverless Inference Providers'\n"
+                ) from exc
+            # On any other failure (rate limit, parse error, etc.) default to reject
             return 0
 
 
-def run_task(agent: LLMAgent, difficulty: str) -> float:
-    """Run one grader task and emit [STEP] logs for each episode."""
+# ── Task runner ───────────────────────────────────────────────────────────────
+def run_task(agent: LLMAgent, difficulty: str, step_offset: int) -> tuple:
+    """
+    Run MAX_EPISODES episodes for one difficulty level.
+    Emits [STEP] logs with globally-unique step numbers.
+    Returns (accuracy_score, rewards_list).
+    """
     env = LoanEnv(difficulty=difficulty)
-    correct = 0
+    correct  = 0
     rewards: List[float] = []
 
     for episode in range(1, MAX_EPISODES + 1):
-        state = env.reset()
+        state      = env.reset()
         state_dict = state.model_dump()
         action_val = agent.choose_action(state_dict)
-        action = ApplicantAction(approve=bool(action_val))
+        action     = ApplicantAction(approve=bool(action_val))
 
-        is_good = env.is_good_applicant(state)
+        is_good    = env.is_good_applicant(state)
         opt_action = True if is_good else False
 
-        _, reward, done, info = env.step(action)
+        _, reward, done, _ = env.step(action)
         rewards.append(reward)
 
         if action.approve == opt_action:
             correct += 1
 
-        action_str = "approve" if action_val == 1 else "reject"
-        log_step(step=episode, action=action_str, reward=reward, done=done, error=None)
+        action_str  = "approve" if action_val == 1 else "reject"
+        global_step = step_offset + episode
+        log_step(step=global_step, action=action_str, reward=reward, done=done, error=None)
 
-    score = correct / MAX_EPISODES
-    return score, rewards
+    accuracy = correct / MAX_EPISODES
+    return accuracy, rewards
 
 
-def run_inference():
+# ── Main entry point ──────────────────────────────────────────────────────────
+def run_inference() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
-    agent = LLMAgent()
+    agent       = LLMAgent()
     all_rewards: List[float] = []
-    scores = {}
+    scores      = {}
+    step_offset = 0
 
     for difficulty in ["easy", "medium", "hard"]:
-        score, rewards = run_task(agent, difficulty)
-        scores[difficulty] = score
+        score, rewards = run_task(agent, difficulty, step_offset)
+        scores[difficulty] = round(score, 3)
         all_rewards.extend(rewards)
+        step_offset += MAX_EPISODES
 
     total_steps = MAX_EPISODES * 3
-    avg_score = sum(scores.values()) / 3
-    success = avg_score >= SUCCESS_SCORE_THRESHOLD
+    avg_score   = sum(scores.values()) / 3
+    success     = avg_score >= SUCCESS_SCORE_THRESHOLD
 
-    results = {
-        "model": MODEL_NAME,
-        "scores": scores,
-    }
-
+    # Save results
+    results = {"model": MODEL_NAME, "scores": scores}
     with open("inference_results.json", "w") as f:
         json.dump(results, f, indent=4)
 
