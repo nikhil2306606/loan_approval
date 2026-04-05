@@ -9,4 +9,4 @@ RUN pip install --upgrade pip && \
 
 EXPOSE 7860
 
-CMD ["python", "server.py"]
+CMD ["python", "server/app.py"]
