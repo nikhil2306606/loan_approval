@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "loanenv"
+version = "0.1.0"
+description = "Loan Approval OpenEnv"
+requires-python = ">=3.10"
+dependencies = [
+    "flask",
+    "pydantic",
+    "openai",
+]
