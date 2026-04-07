@@ -20,11 +20,16 @@ def evaluate_agent(agent, difficulty, episodes=1000):
 
     return correct / episodes
 
-def grader_easy(agent):
-    return evaluate_agent(agent, "easy")
+class EasyGrader:
+    def grade(self, agent):
+        return evaluate_agent(agent, "easy")
 
-def grader_medium(agent):
-    return evaluate_agent(agent, "medium")
 
-def grader_hard(agent):
-    return evaluate_agent(agent, "hard")
+class MediumGrader:
+    def grade(self, agent):
+        return evaluate_agent(agent, "medium")
+
+
+class HardGrader:
+    def grade(self, agent):
+        return evaluate_agent(agent, "hard")

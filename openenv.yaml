@@ -20,19 +20,19 @@ inference_script: "inference.py"
 # Tasks and graders
 tasks:
   - name: "Easy Task"
-    grader: "graders:grader_easy"
+    grader: "graders:EasyGrader"
     reward_range: [0.0, 1.0]
     difficulty: easy
     description: "High-income, high-credit applicants. Most should be approved."
 
   - name: "Medium Task"
-    grader: "graders:grader_medium"
+    grader: "graders:MediumGrader"
     reward_range: [0.0, 1.0]
     difficulty: medium
     description: "Mixed profiles with moderate income and credit variability."
 
   - name: "Hard Task"
-    grader: "graders:grader_hard"
+    grader: "graders:HardGrader"
     reward_range: [0.0, 1.0]
     difficulty: hard
     description: "Wide income range, lower credit scores, high debt variability."
