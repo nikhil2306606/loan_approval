@@ -4,18 +4,13 @@ from typing import List, Optional
 from openai import OpenAI
 from env import LoanEnv, ApplicantAction
 
-# ── Environment variables ────────────────────────────────────────────────────
-# API_BASE_URL must point to the LLM router, NOT to this HF Space.
-# Default is the HF inference router. Override with your own endpoint if needed.
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME   = os.getenv("MODEL_NAME")   or "mistralai/Mistral-7B-Instruct-v0.3"
-HF_TOKEN     = os.getenv("HF_TOKEN")     # No default — required
+HF_TOKEN     = os.getenv("HF_TOKEN")     
 
 TASK_NAME  = os.getenv("LOAN_ENV_TASK", "all")
 BENCHMARK  = "loan_approval_rl"
 
-# Keep episodes low enough to finish in < 20 min on vcpu=2 / 8GB
-# 50 episodes x 3 difficulties = 150 LLM calls total
 MAX_EPISODES            = 50
 SUCCESS_SCORE_THRESHOLD = 0.75
 
@@ -25,9 +20,8 @@ if not HF_TOKEN:
         "Please export HF_TOKEN=<your-huggingface-token> before running."
     )
 
-# ── OpenAI-compatible client pointing at HF router ───────────────────────────
 client = OpenAI(
-    base_url=API_BASE_URL,  # e.g. https://router.huggingface.co/v1
+    base_url=API_BASE_URL, 
     api_key=HF_TOKEN,
 )
 
@@ -48,7 +42,6 @@ Base your decision on:
 Respond ONLY with the JSON. No explanation."""
 
 
-# ── Structured stdout loggers (required format) ───────────────────────────────
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
@@ -70,7 +63,6 @@ def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> No
     )
 
 
-# ── LLM Agent ─────────────────────────────────────────────────────────────────
 class LLMAgent:
     """Calls the LLM via OpenAI-compatible client to make approve/reject decisions."""
 
@@ -99,7 +91,6 @@ class LLMAgent:
                 temperature=0.0,
             )
             text = response.choices[0].message.content.strip()
-            # Strip markdown fences if model wraps JSON in ```
             text = text.strip("` \n").removeprefix("json").strip()
             decision = json.loads(text)
             return 1 if decision.get("approve", False) else 0
@@ -107,18 +98,15 @@ class LLMAgent:
         except Exception as exc:
             err_str = str(exc)
             print(f"[DEBUG] Model request failed: {err_str}", flush=True)
-            # If it's an auth error, stop immediately with a clear message
             if any(code in err_str for code in ["401", "403", "Invalid username", "Unauthorized", "sufficient permissions"]):
                 raise RuntimeError(
                     "\n\n[AUTH ERROR] HF_TOKEN is invalid or expired.\n"
                     "Fix: huggingface.co/settings/tokens → New token → Fine-grained\n"
                     "→ Enable 'Make calls to serverless Inference Providers'\n"
                 ) from exc
-            # On any other failure (rate limit, parse error, etc.) default to reject
             return 0
 
 
-# ── Task runner ───────────────────────────────────────────────────────────────
 def run_task(agent: LLMAgent, difficulty: str, step_offset: int) -> tuple:
     """
     Run MAX_EPISODES episodes for one difficulty level.
@@ -152,7 +140,6 @@ def run_task(agent: LLMAgent, difficulty: str, step_offset: int) -> tuple:
     return accuracy, rewards
 
 
-# ── Main entry point ──────────────────────────────────────────────────────────
 def run_inference() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME)
 
@@ -171,7 +158,6 @@ def run_inference() -> None:
     avg_score   = sum(scores.values()) / 3
     success     = avg_score >= SUCCESS_SCORE_THRESHOLD
 
-    # Save results
     results = {"model": MODEL_NAME, "scores": scores}
     with open("inference_results.json", "w") as f:
         json.dump(results, f, indent=4)

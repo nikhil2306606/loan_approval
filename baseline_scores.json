@@ -1,12 +1,12 @@
 {
     "baseline_rules": {
         "easy": 1.0,
-        "medium": 0.811,
-        "hard": 0.766
+        "medium": 0.796,
+        "hard": 0.734
     },
     "baseline_random": {
-        "easy": 0.512,
-        "medium": 0.513,
-        "hard": 0.533
+        "easy": 0.487,
+        "medium": 0.492,
+        "hard": 0.481
     }
 }

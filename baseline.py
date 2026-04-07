@@ -1,21 +1,25 @@
-from agent import RuleBasedAgent, RandomAgent, QLearningAgent
-from graders import grader_easy, grader_medium, grader_hard
+from agent import RuleBasedAgent, RandomAgent
+from graders import EasyGrader, MediumGrader, HardGrader
 import json
 
 def run_baseline():
     print("--- Running OpenEnv Baseline Inference ---")
-    
+
+    easy_grader = EasyGrader()
+    medium_grader = MediumGrader()
+    hard_grader = HardGrader()
+
     baseline_agent = RuleBasedAgent()
     print("Evaluating Human-Rule Baseline Agent...")
-    b_easy = grader_easy(baseline_agent)
-    b_medium = grader_medium(baseline_agent)
-    b_hard = grader_hard(baseline_agent)
+    b_easy = easy_grader.grade(baseline_agent)
+    b_medium = medium_grader.grade(baseline_agent)
+    b_hard = hard_grader.grade(baseline_agent)
     
     print("\nEvaluating Random Baseline Agent...")
     rand_agent = RandomAgent()
-    r_easy = grader_easy(rand_agent)
-    r_medium = grader_medium(rand_agent)
-    r_hard = grader_hard(rand_agent)
+    r_easy = easy_grader.grade(rand_agent)
+    r_medium = medium_grader.grade(rand_agent)
+    r_hard = hard_grader.grade(rand_agent)
     
     out = {
         "baseline_rules": {

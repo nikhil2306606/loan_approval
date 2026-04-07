@@ -20,7 +20,6 @@ def run_experiment(agent_name, agent, difficulty, is_q_learning=False):
             agent.learn(state, action_val, reward)
         agent.is_training = False
 
-    # Evaluate
     total_reward = 0
     correct_choices = 0
 
