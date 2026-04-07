@@ -63,9 +63,9 @@ An applicant is "good" if they score 3+ on: credit score > 650, debt < 50% of in
 
 | Task | Grader | Description | Expected Difficulty |
 |---|---|---|---|
-| Easy | `grader_easy` | High-income, high-credit, low-debt applicants only. Most should be approved. | Low |
-| Medium | `grader_medium` | Mixed profiles with moderate income and credit variability. | Medium |
-| Hard | `grader_hard` | Wide income range (20k–100k), lower credit (500–750), high debt variability. Requires nuanced decisions. | High |
+| Easy | `EasyGrader` | High-income, high-credit, low-debt applicants only. Most should be approved. | Low |
+| Medium | `MediumGrader` | Mixed profiles with moderate income and credit variability. | Medium |
+| Hard | `HardGrader` | Wide income range (20k–100k), lower credit (500–750), high debt variability. Requires nuanced decisions. | High |
 
 All graders return a normalized accuracy score in **[0.0, 1.0]**.
 
@@ -128,7 +128,7 @@ python inference.py
 |---|---|
 | `env.py` | Core OpenEnv environment with `step()`, `reset()`, `state()` |
 | `agent.py` | RandomAgent, RuleBasedAgent, QLearningAgent |
-| `graders.py` | `grader_easy`, `grader_medium`, `grader_hard` |
+| `graders.py` | `EasyGrader`, `MediumGrader`, `HardGrader` |
 | `baseline.py` | Baseline inference script (reproducible scores) |
 | `inference.py` | LLM agent inference script (uses OpenAI client) |
 | `main.py` | Trains Q-Learning agent, exports results JSON |
