@@ -1,4 +1,5 @@
 from env import LoanEnv, ApplicantAction
+from agent import RuleBasedAgent
 
 def evaluate_agent(agent, difficulty, episodes=1000):
     env = LoanEnv(difficulty)
@@ -21,15 +22,18 @@ def evaluate_agent(agent, difficulty, episodes=1000):
     return correct / episodes
 
 class EasyGrader:
-    def grade(self, agent):
+    def grade(self):
+        agent = RuleBasedAgent()
         return evaluate_agent(agent, "easy")
 
 
 class MediumGrader:
-    def grade(self, agent):
+    def grade(self):
+        agent = RuleBasedAgent()
         return evaluate_agent(agent, "medium")
 
 
 class HardGrader:
-    def grade(self, agent):
+    def grade(self):
+        agent = RuleBasedAgent()
         return evaluate_agent(agent, "hard")
