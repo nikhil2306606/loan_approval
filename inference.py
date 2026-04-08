@@ -6,7 +6,7 @@ from env import LoanEnv, ApplicantAction
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME   = os.getenv("MODEL_NAME")   or "mistralai/Mistral-7B-Instruct-v0.3"
-HF_TOKEN     = os.getenv("HF_TOKEN")
+HF_TOKEN     = os.getenv("HF_TOKEN")     
 
 MAX_EPISODES = 50
 
@@ -17,7 +17,7 @@ if not HF_TOKEN:
     )
 
 client = OpenAI(
-    base_url=API_BASE_URL,
+    base_url=API_BASE_URL, 
     api_key=HF_TOKEN,
 )
 
@@ -30,8 +30,6 @@ or
 {"approve": false}
 """
 
-
-# -------- REQUIRED LOGGING -------- #
 
 def log_start(task: str):
     print(f"[START] task={task}", flush=True)
@@ -51,7 +49,6 @@ def log_end(task: str, score: float, steps: int):
     )
 
 
-# -------- AGENT -------- #
 
 class LLMAgent:
     def choose_action(self, applicant: dict) -> int:
@@ -76,8 +73,6 @@ class LLMAgent:
             return 0
 
 
-# -------- TASK ENTRY POINTS -------- #
-
 def run_easy():
     return run_task("easy")
 
@@ -89,8 +84,6 @@ def run_medium():
 def run_hard():
     return run_task("hard")
 
-
-# -------- CORE EXECUTION -------- #
 
 def run_task(difficulty: str) -> float:
     agent = LLMAgent()
@@ -119,13 +112,12 @@ def run_task(difficulty: str) -> float:
         log_step(step, action_str, reward, done)
 
     score = correct / MAX_EPISODES
-
-    # -------- CRITICAL FIX -------- #
-    # must be strictly between (0,1)
+    
+    # Ensure score is strictly within (0, 1)
     if score >= 1.0:
-        score = 0.999
+        score = 0.99
     elif score <= 0.0:
-        score = 0.001
+        score = 0.01
 
     log_end(difficulty, score, MAX_EPISODES)
 
