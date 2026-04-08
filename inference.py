@@ -6,7 +6,7 @@ from env import LoanEnv, ApplicantAction
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 MODEL_NAME   = os.getenv("MODEL_NAME")   or "mistralai/Mistral-7B-Instruct-v0.3"
-HF_TOKEN     = os.getenv("HF_TOKEN")     
+HF_TOKEN     = os.getenv("HF_TOKEN")
 
 MAX_EPISODES = 50
 
@@ -17,7 +17,7 @@ if not HF_TOKEN:
     )
 
 client = OpenAI(
-    base_url=API_BASE_URL, 
+    base_url=API_BASE_URL,
     api_key=HF_TOKEN,
 )
 
@@ -30,6 +30,28 @@ or
 {"approve": false}
 """
 
+
+# -------- REQUIRED LOGGING -------- #
+
+def log_start(task: str):
+    print(f"[START] task={task}", flush=True)
+
+
+def log_step(step: int, action: str, reward: float, done: bool):
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} done={str(done).lower()} error=null",
+        flush=True,
+    )
+
+
+def log_end(task: str, score: float, steps: int):
+    print(
+        f"[END] task={task} score={score:.3f} steps={steps}",
+        flush=True,
+    )
+
+
+# -------- AGENT -------- #
 
 class LLMAgent:
     def choose_action(self, applicant: dict) -> int:
@@ -54,6 +76,8 @@ class LLMAgent:
             return 0
 
 
+# -------- TASK ENTRY POINTS -------- #
+
 def run_easy():
     return run_task("easy")
 
@@ -66,13 +90,17 @@ def run_hard():
     return run_task("hard")
 
 
+# -------- CORE EXECUTION -------- #
+
 def run_task(difficulty: str) -> float:
     agent = LLMAgent()
     env = LoanEnv(difficulty=difficulty)
 
     correct = 0
 
-    for _ in range(MAX_EPISODES):
+    log_start(difficulty)
+
+    for step in range(1, MAX_EPISODES + 1):
         state = env.reset()
         state_dict = state.model_dump()
 
@@ -82,12 +110,26 @@ def run_task(difficulty: str) -> float:
         is_good = env.is_good_applicant(state)
         optimal = True if is_good else False
 
+        _, reward, done, _ = env.step(action)
+
         if action.approve == optimal:
             correct += 1
 
-        env.step(action)
+        action_str = "approve" if action_val == 1 else "reject"
+        log_step(step, action_str, reward, done)
 
-    return correct / MAX_EPISODES
+    score = correct / MAX_EPISODES
+
+    # -------- CRITICAL FIX -------- #
+    # must be strictly between (0,1)
+    if score >= 1.0:
+        score = 0.999
+    elif score <= 0.0:
+        score = 0.001
+
+    log_end(difficulty, score, MAX_EPISODES)
+
+    return score
 
 
 if __name__ == "__main__":
