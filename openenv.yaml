@@ -1,20 +1,25 @@
 name: loan-approval-env
 version: "1.0"
+
 endpoints:
   reset: "POST /reset"
   step: "POST /step"
   state: "GET /state"
-tasks:
-  - id: easy_task
-    grader: graders:EasyGrader
-  - id: medium_task
-    grader: graders:MediumGrader
-  - id: hard_task
-    grader: graders:HardGrader
 
-# Typed models 
 state_model: "env:ApplicantState"
 action_model: "env:ApplicantAction"
 
-# inference script
 inference_script: "inference.py"
+
+tasks:
+  - id: easy_task
+    entry_point: inference:run_easy
+    grader: graders:EasyGrader
+
+  - id: medium_task
+    entry_point: inference:run_medium
+    grader: graders:MediumGrader
+
+  - id: hard_task
+    entry_point: inference:run_hard
+    grader: graders:HardGrader
