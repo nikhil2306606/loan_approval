@@ -23,10 +23,11 @@ def evaluate_agent(agent, difficulty, episodes=1000):
 
     score = correct / episodes
 
+    # Ensure score is strictly within (0, 1) per platform requirements
     if score >= 1.0:
-        score = 0.999
+        score = 0.99
     elif score <= 0.0:
-        score = 0.001
+        score = 0.01
 
     return score
 
